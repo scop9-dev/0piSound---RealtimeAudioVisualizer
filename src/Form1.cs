@@ -1,4 +1,24 @@
-﻿using AudioVisualizerApp;
+/* 
+   0piSound - Realtime Audio Visualizer
+   -------------------------------------
+
+   All logic and UI are contained in this single file (Form1.cs) intentionally.
+   There is no Program.cs; the application starts directly from Form1.
+
+   Warning: this file is a "beautiful mess" of 1000 lines. 
+   Don’t worry, it works. It’s not a virus, it’s just me being lazy.
+
+   What’s inside:
+   - Audio loopback
+   - Spectrum visualization
+   - Settings and optional Auto Start
+
+   Dependencies: NAudio, Newtonsoft.Json, Costura.Fody.
+   Build it, run it, admire it, and maybe cry a little.
+*/
+
+
+using AudioVisualizerApp;
 using NAudio.Dsp;
 using NAudio.Wave;
 using System;
@@ -20,7 +40,6 @@ namespace AudioVisualizerApp
         private WasapiLoopbackCapture loopback;
         private LoopbackTap loopbackTap;
 
-        // --- Spectres ---
         private AudioSpectrumBase activeSpectrum;
         private BarSpectrum barSpectrum = new BarSpectrum();
         private CircleSpectrum circleSpectrum = new CircleSpectrum();
@@ -45,9 +64,6 @@ namespace AudioVisualizerApp
         [DllImport("dwmapi.dll")]
         private static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS pMargins);
 
-        // ---------------------------
-        // SetWindowCompositionAttribute (Acrylic / Blur) support
-        // ---------------------------
         [StructLayout(LayoutKind.Sequential)]
         private struct AccentPolicy
         {
@@ -94,7 +110,6 @@ namespace AudioVisualizerApp
                      ControlStyles.OptimizedDoubleBuffer, true);
             UpdateStyles();
 
-            // Canvas
             canvas = new TranslucentPanel();
             canvas.Location = new Point(20, 50);
             canvas.Size = new Size(940, 350);
@@ -102,7 +117,6 @@ namespace AudioVisualizerApp
             canvas.Paint += Canvas_Paint;
             Controls.Add(canvas);
 
-            // Switch spectrum
             btnSwitch = new Button();
             btnSwitch.Text = "Switch Spectrum";
             btnSwitch.Location = new Point(20, 10);
@@ -124,11 +138,9 @@ namespace AudioVisualizerApp
             btnParams.Click += BtnParams_Click;
             Controls.Add(btnParams);
 
-            // FFT
             fftBuffer = new Complex[fftSize];
             activeSpectrum = barSpectrum;
 
-            // TIMER UI (60 FPS)
             renderTimer = new Timer();
             renderTimer.Interval = 16;
             renderTimer.Tick += (s, e) => canvas.Invalidate();
@@ -151,7 +163,7 @@ namespace AudioVisualizerApp
             timer.Start();
 
         }
-
+        
         private void VisualizerForm_Shown(object sender, EventArgs e)
         {
             try
@@ -164,7 +176,7 @@ namespace AudioVisualizerApp
             }
         }
 
-        private void EnableGlassEffect()
+        private void EnableGlassEffect() 
         {
             try
             {
@@ -180,7 +192,7 @@ namespace AudioVisualizerApp
                     Marshal.StructureToPtr(accent, accentPtr, false);
                     var data = new WindowCompositionAttributeData
                     {
-                        Attribute = 19, // WCA_ACCENT_POLICY
+                        Attribute = 19, 
                         SizeOfData = accentSize,
                         Data = accentPtr
                     };
@@ -219,6 +231,7 @@ namespace AudioVisualizerApp
                 }
             }
         }
+        
         private void BtnSwitch_Click(object sender, EventArgs e)
         {
             List<AudioSpectrumBase> spectraList = new List<AudioSpectrumBase>();
@@ -232,10 +245,8 @@ namespace AudioVisualizerApp
             if (Settings.UseSinusWave) spectraList.Add(sinusSpectrum);
             if (Settings.ShowSpectrogram) spectraList.Add(spectrogramSpectrum);
 
-            // Chercher l'index du spectre actif
             int currentIndex = spectraList.IndexOf(activeSpectrum);
 
-            // Passer au suivant
             int nextIndex = (currentIndex + 1) % spectraList.Count;
 
             activeSpectrum = spectraList[nextIndex];
@@ -254,7 +265,6 @@ namespace AudioVisualizerApp
             }
         }
 
-        // Remplacez la méthode Loopback_DataAvailable par celle-ci
         private void Loopback_DataAvailable(object sender, WaveInEventArgs e)
         {
             try
@@ -271,7 +281,6 @@ namespace AudioVisualizerApp
 
         private void Canvas_Paint(object sender, PaintEventArgs e)
         {
-            // Réglages PERF (anti saccades)
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
             e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighSpeed;
             e.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
@@ -340,7 +349,6 @@ namespace AudioVisualizerApp
                         g.Clear(Color.FromArgb(30, 0, 0, 0));
                         using (var pen = new Pen(Color.DarkGray, 2))
                         {
-                            // grille simple
                             for (int x = 0; x < canvas.Width; x += 20) g.DrawLine(pen, x, 0, x, canvas.Height);
                             for (int y = 0; y < canvas.Height; y += 20) g.DrawLine(pen, 0, y, canvas.Width, y);
                         }
@@ -352,7 +360,6 @@ namespace AudioVisualizerApp
                     return;
                 }
 
-                // Préparer le buffer FFT
                 for (int i = 0; i < fftSize; i++)
                 {
                     fftBuffer[i].X = i < read ? (float)(buffer[i] * FastFourierTransform.HammingWindow(i, fftSize)) : 0;
@@ -363,8 +370,7 @@ namespace AudioVisualizerApp
                 for (int i = 0; i < read; i++) sumSq += buffer[i] * buffer[i];
                 double rms = Math.Sqrt(sumSq / Math.Max(1, read));
                 System.Diagnostics.Debug.WriteLine("Audio RMS: " + rms.ToString("F4"));
-
-                // FFT
+                
                 try
                 {
                     FastFourierTransform.FFT(true, (int)Math.Log(fftSize, 2.0), fftBuffer);
@@ -387,7 +393,6 @@ namespace AudioVisualizerApp
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine("Spectrum.Draw exception: " + ex);
-                        // dessiner message d'erreur sur le bitmap
                         g.DrawString("Spectrum.Draw error: " + ex.Message, new Font("Segoe UI", 10), Brushes.Red, new PointF(10, 10));
                     }
                 }
@@ -426,7 +431,6 @@ namespace AudioVisualizerApp
 
         }
 
-        // Ajouter cette surcharge dans la classe VisualizerForm pour corriger les hit-tests
         protected override void WndProc(ref Message m)
         {
             const int WM_NCHITTEST = 0x84;
@@ -454,7 +458,6 @@ namespace AudioVisualizerApp
         }
     }
 
-    // --- Extension DoubleBuffer ---
     public static class ControlExtensions
     {
         public static void DoubleBuffered(this Control c, bool enable)
@@ -467,7 +470,6 @@ namespace AudioVisualizerApp
         }
     }
 
-    // --- LoopbackTap ---
     public class LoopbackTap
     {
         private readonly float[] buffer;
@@ -535,13 +537,12 @@ namespace AudioVisualizerApp
         }
     }
 
-    // --- Spectres modulaires ---
     public abstract class AudioSpectrumBase
     {
         public abstract void Draw(Graphics g, Complex[] fftBuffer, int width, int height);
     }
 
-public class BarSpectrum : AudioSpectrumBase
+    public class BarSpectrum : AudioSpectrumBase
     {
         private readonly int barCount = 64;
         private readonly SolidBrush[] barBrushes;
@@ -572,7 +573,6 @@ public class BarSpectrum : AudioSpectrumBase
                 float target = (float)(mag * 10000);
                 if (target > height) target = height;
 
-                // Lissage bidirectionnel
                 heights[i] += (target - heights[i]) * Smoothing;
 
                 float h = heights[i];
@@ -724,7 +724,6 @@ public class GlowSpectrum : AudioSpectrumBase, IDisposable
 
     private const float MinHeight = 2f;
 
-    // Paramètre de lissage réactif
     private const float Smoothing = 0.2f; // ajustable : 0.0 = instantané, 1.0 = très lent
 
     public GlowSpectrum()
@@ -907,7 +906,6 @@ public class SpectrogramSpectrum : AudioSpectrumBase
             bmpG.DrawImage(spectrogramBmp, -1, 0);
         }
 
-        // Verrouille la bitmap en lecture/écriture et met à jour la dernière colonne (droite)
         var rect = new Rectangle(0, 0, spectrogramBmp.Width, spectrogramBmp.Height);
         var bmpData = spectrogramBmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadWrite, spectrogramBmp.PixelFormat);
         try
@@ -959,7 +957,6 @@ public class TranslucentPanel : Panel
         this.UpdateStyles();
     }
 
-    // Valeur 0..255
     public int OverlayAlpha
     {
         get { return overlayAlpha; }
@@ -970,7 +967,6 @@ public class TranslucentPanel : Panel
         }
     }
 
-    // Optionnel : changer la couleur de la teinte (par défaut noir)
     public Color OverlayColor
     {
         get { return overlayColor; }
@@ -989,15 +985,14 @@ public class TranslucentPanel : Panel
 
     protected override void OnPaintBackground(PaintEventArgs e)
     {
-        // Dessine BackgroundImage / BackColor d'abord
         base.OnPaintBackground(e);
 
-        // Puis superposer la teinte semi-transparente
         using (var b = new SolidBrush(Color.FromArgb(overlayAlpha, overlayColor)))
         {
             e.Graphics.FillRectangle(b, this.ClientRectangle);
         }
     }
 }
+
 
 // End of code file
