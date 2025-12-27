@@ -1,3 +1,5 @@
+> **Status:** Active development and maintenance.
+
 # 0piSound
 
 **0piSound** is a real-time audio visualizer designed for creative and experimental projects.  
