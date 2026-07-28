@@ -9,4 +9,4 @@ Screenshots and visual references for 0piSound.
 ![Parameters](https://github.com/scop9-dev/0piSound---RealtimeAudioVisualizer/blob/main/docs/images/settings_ui.PNG)
 
 ### Icon
-![AppIcon](https://github.com/scop9-dev/0piSound---RealtimeAudioVisualizer/blob/main/docs/images/app.PNG)
+![AppIcon](https://github.com/scop9-dev/0piSound---RealtimeAudioVisualizer/blob/main/docs/images/app.png)
