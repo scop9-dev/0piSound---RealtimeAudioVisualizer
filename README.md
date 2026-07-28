@@ -2,7 +2,7 @@
 
 # 0piSound
 
-<img width="1024" height="1024" alt="app" src="https://github.com/user-attachments/assets/c67776b8-ae3a-43f3-b4f4-2598dc76a53a" />
+<img width="400" height="400" alt="app" src="https://github.com/user-attachments/assets/c67776b8-ae3a-43f3-b4f4-2598dc76a53a" />
 
 **0piSound** is a real-time audio visualizer designed for creative and experimental projects.  
 It captures system audio via loopback and displays multiple types of spectrum visualizations.
